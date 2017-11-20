@@ -1,0 +1,55 @@
+{
+  "name": "resmoke",
+  "version": "0.0.1",
+  "description": "A test-case-based, action-based and in-browser front-end e2e test framework for single-page web applications",
+  "main": "index.js",
+  "author": "AndyRightNow",
+  "license": "MIT",
+  "scripts": {
+    "prettier": "prettier ./src/**/*.ts --write",
+    "lint": "tslint -p ./tsconfig.json --fix",
+    "test": "jest",
+    "ts-check": "tsc --noEmit",
+    "precommit": "npm run prettier && npm run lint && npm run ts-check && npm run test && git add ."
+  },
+  "private": false,
+  "devDependencies": {
+    "@types/chai": "^4.0.5",
+    "@types/jest": "^21.1.6",
+    "@types/lodash": "^4.14.85",
+    "@types/sizzle": "^2.3.1",
+    "chai": "^4.1.2",
+    "husky": "^0.14.3",
+    "jest": "^21.2.1",
+    "prettier": "^1.8.2",
+    "rollup": "^0.51.8",
+    "ts-jest": "^21.2.3",
+    "tslint": "^5.8.0",
+    "typescript": "^2.6.1"
+  },
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "sizzle": "^2.3.3"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "**/*.{ts}",
+      "!**/__tests__/**",
+      "!**/node_modules/**"
+    ],
+    "verbose": true,
+    "moduleDirectories": [
+      "node_modules"
+    ],
+    "transform": {
+      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "testRegex": "/__tests__/.*\\.spec\\.(ts)$",
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
+    ]
+  }
+}
