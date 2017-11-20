@@ -1,9 +1,11 @@
-import Resmoke, { ActionDefinitionReturnType } from '../Resmoke/index';
+import Resmoke, { ActionDefinition, ActionDefinitionReturnType } from '../Resmoke/index';
 import { isNumber, defaultTo } from 'lodash';
 import { validateArg } from '../utils/validation';
 import * as sizzle from 'sizzle';
 
-export function waitFor(sizzleObj: (selector: string) => Element[] = sizzle) {
+export function waitFor(
+    sizzleObj: (selector: string) => Element[] = sizzle,
+): ActionDefinition<Resmoke> {
     function fn(this: Resmoke, timeout: number): ActionDefinitionReturnType;
     function fn(this: Resmoke, selector: string, timeout: number): ActionDefinitionReturnType;
     function fn(this: Resmoke, ...args: any[]): ActionDefinitionReturnType {
@@ -33,7 +35,7 @@ export function waitFor(sizzleObj: (selector: string) => Element[] = sizzle) {
                     cnt++;
                     el = sizzleObj(selector);
 
-                    if (el.length) {
+                    if (el && el.length) {
                         resolve(el);
                     } else if (cnt >= timeout) {
                         reject(
