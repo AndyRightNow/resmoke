@@ -21,6 +21,16 @@ describe('class Resmoke', () => {
         });
     });
 
+    describe('Props', () => {
+        describe('Language chains', () => {
+            describe('and', () => {
+                it('should return itself', () => {
+                    expect(resmoke.and).to.eq(resmoke);
+                });
+            });
+        });
+    });
+
     describe('Methods', () => {
         describe('addAction', () => {
             it('should add the action to the class prototype', () => {
