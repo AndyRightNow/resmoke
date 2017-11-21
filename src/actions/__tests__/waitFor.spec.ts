@@ -11,35 +11,64 @@ describe('File waitFor.ts', () => {
     });
 
     describe('Action waitFor', () => {
-        it('should resolve successfully if waiting for a specific amount of time', () => {
-            let cnt = 0;
+        const nullSizzle = () => null as any;
+        const foundSizzle = () => [{}] as any;
+        describe('Without selector', () => {
+            it('should resolve successfully if waiting for a specific amount of time', () => {
+                let cnt = 0;
 
-            setInterval(() => cnt++);
+                setInterval(() => cnt++);
 
-            return waitFor(() => null)
-                .call(resmoke, 2000)
-                .then(() => {
-                    expect(cnt).to.be.approximately(2000, 1000);
-                });
+                return waitFor(nullSizzle)
+                    .call(resmoke, 2000)
+                    .then(() => {
+                        expect(cnt).to.be.approximately(2000, 1000);
+                    });
+            });
         });
 
-        it('should reject if no element is found for a selector and the timeout is exceeded', () => {
-            return waitFor(() => null)
-                .call(resmoke, 's')
-                .then(() => {
-                    expect(true).to.be.false;
-                })
-                .catch((err: Error) => {
-                    expect(err).to.not.be.undefined;
+        describe('With selector', () => {
+            describe('With toShow flagged true', () => {
+                it('should reject if no element is found for a selector and the timeout is exceeded', () => {
+                    return waitFor(nullSizzle)
+                        .call(resmoke, 's')
+                        .then(() => {
+                            expect(true).to.be.false;
+                        })
+                        .catch((err: Error) => {
+                            expect(err).to.not.be.undefined;
+                        });
                 });
-        });
 
-        it('should resolve if any elements are found within the timeout', () => {
-            return waitFor(() => [{}] as any)
-                .call(resmoke, 's')
-                .then((els: any[]) => {
-                    expect(els).to.have.length(1);
+                it('should resolve if any elements are found within the timeout', () => {
+                    return waitFor(foundSizzle)
+                        .call(resmoke, 's')
+                        .then((els: any[]) => {
+                            expect(els).to.have.length(1);
+                        });
                 });
+            });
+
+            describe('With toShow flagged false', () => {
+                it('should reject if elements are found for a selector and the timeout is exceeded', () => {
+                    return waitFor(foundSizzle)
+                        .call(resmoke, 's', false)
+                        .then(() => {
+                            expect(true).to.be.false;
+                        })
+                        .catch((err: Error) => {
+                            expect(err).to.not.be.undefined;
+                        });
+                });
+
+                it('should resolve if any elements are not found within the timeout', () => {
+                    return waitFor(nullSizzle)
+                        .call(resmoke, 's', false)
+                        .then((els: any[]) => {
+                            expect(els).to.be.null;
+                        });
+                });
+            });
         });
     });
 });

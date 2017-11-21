@@ -2,12 +2,16 @@
   "compilerOptions": {
       "module": "commonjs",
       "noImplicitAny": true,
+      "outDir": "./dist",
+      "rootDir": "./src",
       "removeComments": true,
       "preserveConstEnums": true,
       "target": "es6",
       "sourceMap": true,
       "noUnusedLocals": true,
       "noImplicitThis": true,
+      "declaration": true,
+      "declarationDir": "./dist"
   },
   "include": [
       "src/**/*"

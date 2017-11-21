@@ -1,5 +1,5 @@
 import Resmoke, { ActionDefinition, ActionDefinitionReturnType } from '../Resmoke/index';
-import { isNumber, defaultTo } from 'lodash';
+import { isNumber, defaultTo, isBoolean } from 'lodash';
 import { validateArg } from '../utils/validation';
 import * as sizzle from 'sizzle';
 
@@ -8,9 +8,16 @@ export function waitFor(
 ): ActionDefinition<Resmoke> {
     function fn(this: Resmoke, timeout: number): ActionDefinitionReturnType;
     function fn(this: Resmoke, selector: string, timeout: number): ActionDefinitionReturnType;
+    function fn(
+        this: Resmoke,
+        selector: string,
+        toShow: boolean,
+        timeout: number,
+    ): ActionDefinitionReturnType;
     function fn(this: Resmoke, ...args: any[]): ActionDefinitionReturnType {
         let timeout = 0;
         let selector = '';
+        let toShow = true;
         if (isNumber(args[0])) {
             timeout = args[0];
 
@@ -23,10 +30,23 @@ export function waitFor(
             });
         } else {
             selector = args[0];
-            timeout = args[1];
             validateArg('selector', selector, 'string', 0);
-            validateArg('timeout', timeout, 'number', 1, true);
-            timeout = defaultTo(timeout, this.timeout);
+
+            if (isNumber(args[1])) {
+                timeout = args[1];
+                timeout = defaultTo(timeout, this.timeout);
+            } else if (isBoolean(args[1])) {
+                toShow = args[1];
+                toShow = defaultTo(toShow, true);
+                timeout = args[2];
+                timeout = defaultTo(timeout, this.timeout);
+
+                validateArg('timeout', timeout, 'number', 2);
+            }
+
+            const checkCond = toShow
+                ? (e: Element[]) => !!(e && e.length)
+                : (e: Element[]) => !!(!e || !e.length);
 
             let el: Element[] = null;
             let cnt = 0;
@@ -35,14 +55,14 @@ export function waitFor(
                     cnt++;
                     el = sizzleObj(selector);
 
-                    if (el && el.length) {
+                    if (checkCond(el)) {
                         resolve(el);
                     } else if (cnt >= timeout) {
                         reject(
                             new Error(
                                 `Timeout ${
                                     timeout
-                                } exceeded. No elements that match the selector '${selector};`,
+                                } exceeded. No elements that match the selector '${selector}'`,
                             ),
                         );
                     } else {
