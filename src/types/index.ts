@@ -1,16 +1,22 @@
 import Resmoke, { ActionDefinitionReturnType } from '../Resmoke/index';
 
-export interface ITestLifecycleHookOptions {
-    actions: string[];
-    /**
-     * Always execute before 'actions'
-     */
-    exec: (this: Resmoke) => ActionDefinitionReturnType;
-}
+export type TestCaseActionFn = (this: Resmoke) => ActionDefinitionReturnType;
+export type TestCaseAction = TestCaseActionFn | Array<string | any[]>;
 
 export interface ITestCaseDefinition {
     name: string;
-    pre: ITestLifecycleHookOptions;
-    test: (this: Resmoke) => ActionDefinitionReturnType;
-    post: ITestLifecycleHookOptions;
+    pre?: TestCaseAction;
+    test?: TestCaseAction;
+    post?: TestCaseAction;
+}
+
+export enum TEST_CASE_RUN_RESULT_STATUS {
+    FAIL,
+    SUCCESS,
+}
+
+export interface ITestCaseRunResult {
+    name: string;
+    status: TEST_CASE_RUN_RESULT_STATUS;
+    errors: Error[];
 }

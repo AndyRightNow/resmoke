@@ -1,6 +1,14 @@
-import { validateArg } from '../utils/validation';
+import { validateArg, ajv } from '../utils/validation';
 import { isPromise } from '../utils/types';
 import constants from '../constants';
+import {
+    ITestCaseDefinition,
+    ITestCaseRunResult,
+    TestCaseAction,
+    TestCaseActionFn,
+    TEST_CASE_RUN_RESULT_STATUS,
+} from '../types/index';
+import { extend } from 'lodash';
 
 export interface IResmokeProps {
     timeout?: number;
@@ -45,7 +53,7 @@ export default class Resmoke {
         validateArg('name', name, 'string', 0);
 
         if (Resmoke.prototype.hasOwnProperty(name)) {
-            return (this as any)[name].apply(name, args);
+            return (this as any)[name].apply(this, args);
         } else {
             throw new Error(`Action ${name} does not exist.`);
         }
@@ -53,6 +61,71 @@ export default class Resmoke {
 
     public exec(): Promise<any> {
         return new Promise(resolve => this.next(resolve));
+    }
+
+    public then(fn: () => ActionDefinitionReturnType): this {
+        this.enqueue(fn.bind(this));
+        return this;
+    }
+
+    public run(cases: ITestCaseDefinition[]): Promise<ITestCaseRunResult[]> {
+        validateArg('cases', cases, 'array', 0);
+
+        for (let i = 0, l = cases.length; i < l; i++) {
+            if (!ajv.validate(constants.SCHEMA_ID.TEST_CASE_DEFINITION, cases[i])) {
+                throw new Error(ajv.errorsText());
+            }
+        }
+        // dummy
+        this.runSingle(cases[0]);
+
+        // dummy
+        return Promise.resolve([]);
+    }
+
+    private runSingle(singleCase: ITestCaseDefinition): Promise<ITestCaseRunResult> {
+        const actionFnArr = [
+            ...this.parseTestCaseAction(singleCase.pre),
+            ...this.parseTestCaseAction(singleCase.test),
+            ...this.parseTestCaseAction(singleCase.post),
+        ];
+
+        for (let i = 0, l = actionFnArr.length; i < l; i++) {
+            this.enqueue(actionFnArr[i]);
+        }
+
+        const result: ITestCaseRunResult = {
+            name: singleCase.name,
+            status: TEST_CASE_RUN_RESULT_STATUS.SUCCESS,
+            errors: [],
+        };
+
+        return this.exec()
+            .then<ITestCaseRunResult>(() => {
+                return result;
+            })
+            .catch((error: Error) => {
+                return extend(result, {
+                    status: TEST_CASE_RUN_RESULT_STATUS.FAIL,
+                    errors: result.errors.concat(error),
+                });
+            });
+    }
+
+    private parseTestCaseAction(testCaseAction: TestCaseAction): TestCaseActionFn[] {
+        if (typeof testCaseAction === 'function') {
+            return [testCaseAction];
+        }
+
+        const ret = [];
+
+        for (const action of testCaseAction) {
+            const args = Array.isArray(action) ? action : [action];
+
+            ret.push(this.callAction.bind(this, ...args));
+        }
+
+        return ret;
     }
 
     private next(finalCb: () => void): void {
