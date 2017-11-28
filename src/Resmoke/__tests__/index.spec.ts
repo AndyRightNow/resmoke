@@ -32,7 +32,27 @@ describe('class Resmoke', () => {
         });
     });
 
-    describe('Methods', () => {
+    describe('Static Methods', () => {
+        describe('addAction', () => {
+            it('should be visible to all instances', () => {
+                const inst1 = new Resmoke();
+                const inst2 = new Resmoke();
+
+                inst1.addAction('ac1', () => {});
+                inst2.addAction('ac2', () => {});
+
+                expect((inst2 as any).ac1).to.be.undefined;
+                expect((inst1 as any).ac2).to.be.undefined;
+
+                Resmoke.addAction('ac3', () => {});
+
+                expect((inst2 as any).ac3).to.not.be.undefined;
+                expect((inst1 as any).ac3).to.not.be.undefined;
+            });
+        });
+    });
+
+    describe('Own Methods', () => {
         describe('addAction', () => {
             it('should add the action to the class prototype', () => {
                 const arr: number[] = [];

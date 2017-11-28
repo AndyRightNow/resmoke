@@ -22,6 +22,10 @@ export type ActionDefinitionReturnType = Promise<any> | void;
 export type ActionDefinition<T> = (this: T, ...args: any[]) => ActionDefinitionReturnType;
 
 export default class Resmoke {
+    public static addAction(name: string, def: ActionDefinition<Resmoke>): void {
+        Resmoke.prototype.addActionInternal.call(null, name, def, Resmoke.prototype);
+    }
+
     public timeout: number;
     private actionQueue: Array<ActionDefinition<this>>;
 
@@ -37,18 +41,7 @@ export default class Resmoke {
     }
 
     public addAction(name: string, def: ActionDefinition<this>): this {
-        validateArg('name', name, 'string', 0);
-        validateArg('actionDefinition', def, 'function', 1);
-
-        Object.defineProperty(Resmoke.prototype, name, {
-            value: (...args: any[]) => {
-                this.enqueue(def.bind(this, ...args));
-                return this;
-            },
-            enumerable: true,
-            configurable: true,
-            writable: true,
-        });
+        this.addActionInternal(name, def, this);
 
         return this;
     }
@@ -56,7 +49,7 @@ export default class Resmoke {
     public callAction(name: string, ...args: any[]): this {
         validateArg('name', name, 'string', 0);
 
-        if (Resmoke.prototype.hasOwnProperty(name)) {
+        if (this.hasOwnProperty(name) || Resmoke.prototype.hasOwnProperty(name)) {
             return (this as any)[name].apply(this, args);
         } else {
             throw new Error(`Action ${name} does not exist.`);
@@ -107,6 +100,21 @@ export default class Resmoke {
 
         return runPromise.then(() => {
             return testCaseResults;
+        });
+    }
+
+    private addActionInternal<T>(name: string, def: ActionDefinition<T>, objToAdd: T): void {
+        validateArg('name', name, 'string', 0);
+        validateArg('actionDefinition', def, 'function', 1);
+
+        Object.defineProperty(objToAdd, name, {
+            value(this: Resmoke, ...args: any[]) {
+                this.enqueue(def.bind(this, ...args));
+                return this;
+            },
+            enumerable: true,
+            configurable: true,
+            writable: true,
         });
     }
 
