@@ -8,7 +8,11 @@ import {
     TestCaseActionFn,
     TEST_CASE_RUN_RESULT_STATUS,
 } from '../types/index';
-import { extend } from 'lodash';
+import { extend, forEach } from 'lodash';
+import * as debug from 'debug';
+import { getDebugName } from '../utils/debug';
+
+const runSingleDebug = debug(getDebugName('instance-runSingle'));
 
 export interface IResmokeProps {
     timeout?: number;
@@ -60,7 +64,18 @@ export default class Resmoke {
     }
 
     public exec(): Promise<any> {
-        return new Promise(resolve => this.next(resolve));
+        return new Promise((resolve, reject) => {
+            function finalCb(err?: Error): void {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                resolve();
+            }
+
+            this.next(finalCb);
+        });
     }
 
     public then(fn: () => ActionDefinitionReturnType): this {
@@ -76,15 +91,19 @@ export default class Resmoke {
 
         for (let i = 0, l = cases.length; i < l; i++) {
             if (!ajv.validate(constants.SCHEMA_ID.TEST_CASE_DEFINITION, cases[i])) {
-                throw new Error(ajv.errorsText());
+                throw new Error(
+                    `Error occured when validating the case at index ${i}: ${ajv.errorsText()}`,
+                );
             }
+        }
 
+        forEach(cases, c => {
             runPromise = runPromise.then(() => {
-                return this.runSingle(cases[i]).then(result => {
+                return this.runSingle(c).then(result => {
                     testCaseResults.push(result);
                 });
             });
-        }
+        });
 
         return runPromise.then(() => {
             return testCaseResults;
@@ -92,6 +111,7 @@ export default class Resmoke {
     }
 
     private runSingle(singleCase: ITestCaseDefinition): Promise<ITestCaseRunResult> {
+        runSingleDebug(`Running single case ${singleCase.name}...`);
         const actionFnArr = [
             ...this.parseTestCaseAction(singleCase.pre),
             ...this.parseTestCaseAction(singleCase.test),
@@ -101,6 +121,7 @@ export default class Resmoke {
         for (let i = 0, l = actionFnArr.length; i < l; i++) {
             this.enqueue(actionFnArr[i]);
         }
+        runSingleDebug(`Queued ${actionFnArr.length} actions`);
 
         const result: ITestCaseRunResult = {
             name: singleCase.name,
@@ -110,9 +131,11 @@ export default class Resmoke {
 
         return this.exec()
             .then<ITestCaseRunResult>(() => {
+                runSingleDebug(`Case ${singleCase.name} is successfully run.`);
                 return result;
             })
             .catch((error: Error) => {
+                runSingleDebug(`Case ${singleCase.name} finished with error ${error}.`);
                 return extend(result, {
                     status: TEST_CASE_RUN_RESULT_STATUS.FAIL,
                     errors: result.errors.concat(error),
@@ -127,20 +150,29 @@ export default class Resmoke {
 
         const ret = [];
 
-        for (const action of testCaseAction) {
-            const args = Array.isArray(action) ? action : [action];
+        if (testCaseAction && testCaseAction.length) {
+            for (const action of testCaseAction) {
+                const args = Array.isArray(action) ? action : [action];
 
-            ret.push(this.callAction.bind(this, ...args));
+                ret.push(this.callAction.bind(this, ...args));
+            }
         }
 
         return ret;
     }
 
-    private next(finalCb: () => void): void {
+    private next(finalCb: (err?: Error) => void): void {
         if (this.actionQueue.length) {
             const actionDef = this.actionQueue.shift();
 
-            const result = actionDef.call(this);
+            let result;
+
+            try {
+                result = actionDef.call(this);
+            } catch (error) {
+                finalCb(error);
+                return;
+            }
 
             if (isPromise(result)) {
                 result.then(() => {

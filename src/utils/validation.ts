@@ -4,6 +4,10 @@ import * as Ajv from 'ajv';
 import { Ajv as AjvType, ErrorObject } from 'ajv';
 import { testCaseActionSchema, testCaseDefinitionSchema } from '../types/schemas/index';
 import constants from './../constants';
+import * as debug from 'debug';
+import { getDebugName } from './debug';
+
+const validationDebug = debug(getDebugName('validation'));
 
 type ValidationType = 'argument' | 'property';
 type PartialErrorObject = Pick<ErrorObject, 'keyword' | 'message' | 'params' | 'dataPath'>;
@@ -99,7 +103,14 @@ function setupValidation(): AjvType {
 
             fn.errors = fn.errors || [];
 
+            validationDebug(
+                `Validating ${dataPath} ${data} with the keyword objectTypes using the schemas ${
+                    schema
+                }`,
+            );
             if (Array.isArray(data) || isObjectLike(data) || typeof data === 'function') {
+                let isSuccessful = false;
+
                 for (const s of schema) {
                     if (s === 'array') {
                         if (Array.isArray(data)) {
@@ -109,7 +120,8 @@ function setupValidation(): AjvType {
                             const arrayValidate = ajvInst.compile(newParentSchema);
 
                             if (arrayValidate(data)) {
-                                continue;
+                                isSuccessful = true;
+                                break;
                             } else {
                                 fn.errors = fn.errors.concat(arrayValidate.errors || []);
                             }
@@ -118,12 +130,16 @@ function setupValidation(): AjvType {
                         const Ctor: () => void = new Function(`return ${s}`)();
 
                         if (data instanceof Ctor) {
-                            continue;
+                            isSuccessful = true;
+                            break;
                         }
                     } else if (typeof data === s) {
-                        continue;
+                        isSuccessful = true;
+                        break;
                     }
+                }
 
+                if (!isSuccessful) {
                     fn.errors.push(error);
                     return false;
                 }

@@ -8,7 +8,7 @@
   "scripts": {
     "prettier": "prettier ./src/**/*.ts --write",
     "lint": "tslint -p ./tsconfig.json --fix",
-    "test": "jest",
+    "test": "cross-env DEBUG=resmoke:* jest -i",
     "ts-check": "tsc --noEmit",
     "precommit": "npm run prettier && npm run lint && npm run ts-check && npm run test && git add ."
   },
@@ -16,10 +16,13 @@
   "devDependencies": {
     "@types/ajv": "^1.0.0",
     "@types/chai": "^4.0.5",
+    "@types/debug": "^0.0.30",
     "@types/jest": "^21.1.6",
     "@types/lodash": "^4.14.85",
     "@types/sizzle": "^2.3.1",
     "chai": "^4.1.2",
+    "cross-env": "^5.1.1",
+    "debug": "^3.1.0",
     "husky": "^0.14.3",
     "jest": "^21.2.1",
     "prettier": "^1.8.2",
