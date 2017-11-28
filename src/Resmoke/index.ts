@@ -71,16 +71,24 @@ export default class Resmoke {
     public run(cases: ITestCaseDefinition[]): Promise<ITestCaseRunResult[]> {
         validateArg('cases', cases, 'array', 0);
 
+        const testCaseResults: ITestCaseRunResult[] = [];
+        let runPromise: Promise<any> = Promise.resolve();
+
         for (let i = 0, l = cases.length; i < l; i++) {
             if (!ajv.validate(constants.SCHEMA_ID.TEST_CASE_DEFINITION, cases[i])) {
                 throw new Error(ajv.errorsText());
             }
-        }
-        // dummy
-        this.runSingle(cases[0]);
 
-        // dummy
-        return Promise.resolve([]);
+            runPromise = runPromise.then(() => {
+                return this.runSingle(cases[i]).then(result => {
+                    testCaseResults.push(result);
+                });
+            });
+        }
+
+        return runPromise.then(() => {
+            return testCaseResults;
+        });
     }
 
     private runSingle(singleCase: ITestCaseDefinition): Promise<ITestCaseRunResult> {
