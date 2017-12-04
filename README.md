@@ -7,6 +7,8 @@
     <div align="center">A test-case-based, action-based and in-browser front-end e2e test framework for single-page web applications.</div>
 </p>
 
+**Note:** The package is still in early development process.
+
 # Installation
 
 ```bash
