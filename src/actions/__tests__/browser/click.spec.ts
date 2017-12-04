@@ -1,7 +1,6 @@
 /* tslint:disable */
-import { expect } from 'chai';
-import { click } from '../click';
-import Resmoke from '../../Resmoke/index';
+import { click } from '../../click';
+import Resmoke from '../../../Resmoke/index';
 
 describe('File click.ts', () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 3000;
@@ -29,7 +28,7 @@ describe('File click.ts', () => {
 
             return new Promise(resolve => {
                 div.addEventListener('click', e => {
-                    expect(e).to.not.be.undefined;
+                    expect(e).not.toBe(undefined);
                     resolve();
                 });
 

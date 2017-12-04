@@ -1,7 +1,6 @@
 /* tslint:disable */
-import { expect } from 'chai';
-import { inputText } from '../inputText';
-import Resmoke from '../../Resmoke/index';
+import { inputText } from '../../inputText';
+import Resmoke from '../../../Resmoke/index';
 
 describe('File inputText.ts', () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 3000;
@@ -32,12 +31,12 @@ describe('File inputText.ts', () => {
             return new Promise(resolve => {
                 let hit = 0;
                 input.addEventListener('input', e => {
-                    expect(e).to.not.be.undefined;
+                    expect(e).not.toBe(undefined);
                     hit++;
                 });
 
                 input.addEventListener('change', e => {
-                    expect(e).to.not.be.undefined;
+                    expect(e).not.toBe(undefined);
                     hit++;
                 });
 
