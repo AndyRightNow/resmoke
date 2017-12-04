@@ -23,9 +23,9 @@ describe('File inputText.ts', () => {
             };
         });
 
-        it('should trigger input or change event', () => {
+        it('should trigger input and change event', () => {
             const input = document.createElement('input');
-            input.id = 'test';
+            input.id = 'testinput';
             document.body.appendChild(input);
 
             return new Promise(resolve => {
@@ -40,13 +40,13 @@ describe('File inputText.ts', () => {
                     hit++;
                 });
 
-                setTimeout(() => {
+                setInterval(() => {
                     if (hit >= 2) {
                         resolve();
                     }
-                });
+                }, 1);
 
-                newResmoke.inputText('#test', 'sometext').exec();
+                newResmoke.inputText(`#${input.id}`, 'sometext').exec();
             });
         });
     });
