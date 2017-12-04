@@ -7,4 +7,16 @@
     <div>A JavaScript front-end e2e test framework.</div>
 </div>
 
+# Installation
+
+```bash
+$ npm install resmoke@0.0.1-alpha.0 --save-dev
+```
+
+or:
+
+```bash
+$ yarn add resmoke@0.0.1-alpha.0 --dev
+```
+
 
