@@ -1,6 +1,6 @@
 {
   "name": "resmoke",
-  "version": "0.0.1",
+  "version": "0.0.2-0",
   "description": "A test-case-based, action-based and in-browser front-end e2e test framework for single-page web applications",
   "main": "index.js",
   "author": "AndyRightNow",
