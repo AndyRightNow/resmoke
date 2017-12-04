@@ -15,15 +15,7 @@ describe('File waitFor.ts', () => {
         const foundSizzle = () => [{}] as any;
         describe('Without selector', () => {
             it('should resolve successfully if waiting for a specific amount of time', () => {
-                let cnt = 0;
-
-                setInterval(() => cnt++);
-
-                return waitFor(nullSizzle)
-                    .call(resmoke, 2000)
-                    .then(() => {
-                        expect(cnt).to.be.approximately(2000, 1000);
-                    });
+                return waitFor(nullSizzle).call(resmoke, 2000);
             });
         });
 

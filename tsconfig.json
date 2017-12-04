@@ -10,8 +10,7 @@
       "sourceMap": true,
       "noUnusedLocals": true,
       "noImplicitThis": true,
-      "declaration": true,
-      "declarationDir": "./dist"
+      "declaration": false
   },
   "include": [
       "src/**/*"

@@ -1,5 +1,7 @@
 import Resmoke, { ActionDefinition, ActionDefinitionReturnType } from '../Resmoke/index';
-import { isNumber, defaultTo, isBoolean } from 'lodash';
+import isNumber = require('lodash/isNumber');
+import isBoolean = require('lodash/isBoolean');
+const defaultTo = require('lodash/defaultTo');
 import { validateArg } from '../utils/validation';
 import * as sizzle from 'sizzle';
 

@@ -1,13 +1,16 @@
-import { capitalize, isObjectLike, cloneDeep } from 'lodash';
+import capitalize = require('lodash/capitalize');
+import isObjectLike = require('lodash/isObjectLike');
+import cloneDeep = require('lodash/cloneDeep');
 import { noop } from './index';
 import * as Ajv from 'ajv';
 import { Ajv as AjvType, ErrorObject } from 'ajv';
 import { testCaseActionSchema, testCaseDefinitionSchema } from '../types/schemas/index';
 import constants from './../constants';
-import * as debug from 'debug';
-import { getDebugName } from './debug';
 
-const validationDebug = debug(getDebugName('validation'));
+let validationDebug: any;
+if (!PRODUCTION) {
+    validationDebug = require('debug')(require('./debug').getDebugName('validation'));
+}
 
 type ValidationType = 'argument' | 'property';
 type PartialErrorObject = Pick<ErrorObject, 'keyword' | 'message' | 'params' | 'dataPath'>;
@@ -103,11 +106,13 @@ function setupValidation(): AjvType {
 
             fn.errors = fn.errors || [];
 
-            validationDebug(
-                `Validating ${dataPath} ${data} with the keyword objectTypes using the schemas ${
-                    schema
-                }`,
-            );
+            if (!PRODUCTION) {
+                validationDebug(
+                    `Validating ${dataPath} ${
+                        data
+                    } with the keyword objectTypes using the schemas ${schema}`,
+                );
+            }
             if (Array.isArray(data) || isObjectLike(data) || typeof data === 'function') {
                 let isSuccessful = false;
 

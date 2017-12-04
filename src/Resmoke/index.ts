@@ -8,11 +8,13 @@ import {
     TestCaseActionFn,
     TEST_CASE_RUN_RESULT_STATUS,
 } from '../types/index';
-import { extend, forEach } from 'lodash';
-import * as debug from 'debug';
-import { getDebugName } from '../utils/debug';
+import extend = require('lodash/extend');
+import forEach = require('lodash/forEach');
 
-const runSingleDebug = debug(getDebugName('instance-runSingle'));
+let runSingleDebug: any;
+if (!PRODUCTION) {
+    runSingleDebug = require('debug')(require('../utils/debug').getDebugName('instance-runSingle'));
+}
 
 export interface IResmokeProps {
     timeout?: number;
@@ -119,7 +121,9 @@ export default class Resmoke {
     }
 
     private runSingle(singleCase: ITestCaseDefinition): Promise<ITestCaseRunResult> {
-        runSingleDebug(`Running single case ${singleCase.name}...`);
+        if (!PRODUCTION) {
+            runSingleDebug(`Running single case ${singleCase.name}...`);
+        }
         const actionFnArr = [
             ...this.parseTestCaseAction(singleCase.pre),
             ...this.parseTestCaseAction(singleCase.test),
@@ -129,7 +133,9 @@ export default class Resmoke {
         for (let i = 0, l = actionFnArr.length; i < l; i++) {
             this.enqueue(actionFnArr[i]);
         }
-        runSingleDebug(`Queued ${actionFnArr.length} actions`);
+        if (!PRODUCTION) {
+            runSingleDebug(`Queued ${actionFnArr.length} actions`);
+        }
 
         const result: ITestCaseRunResult = {
             name: singleCase.name,
@@ -139,11 +145,15 @@ export default class Resmoke {
 
         return this.exec()
             .then<ITestCaseRunResult>(() => {
-                runSingleDebug(`Case ${singleCase.name} is successfully run.`);
+                if (!PRODUCTION) {
+                    runSingleDebug(`Case ${singleCase.name} is successfully run.`);
+                }
                 return result;
             })
             .catch((error: Error) => {
-                runSingleDebug(`Case ${singleCase.name} finished with error ${error}.`);
+                if (!PRODUCTION) {
+                    runSingleDebug(`Case ${singleCase.name} finished with error ${error}.`);
+                }
                 return extend(result, {
                     status: TEST_CASE_RUN_RESULT_STATUS.FAIL,
                     errors: result.errors.concat(error),

@@ -8,6 +8,7 @@
         "eofline": [false],
         "no-string-literal": [false],
         "ordered-imports": [false],
-        "arrow-parens": [false]
+        "arrow-parens": [false],
+        "no-var-requires": [false]
     }
 }

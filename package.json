@@ -10,16 +10,23 @@
     "lint": "tslint -p ./tsconfig.json --fix",
     "test": "cross-env DEBUG=resmoke:* jest -i",
     "ts-check": "tsc --noEmit",
+    "build": "webpack --config ./config/webpack/webpack.config.prod.js --verbose --display-modules --sort-assets-by size --sort-chunks-by size --sort-modules-by size",
     "precommit": "npm run prettier && npm run lint && npm run ts-check && npm run test && git add ."
   },
   "private": false,
   "devDependencies": {
+    "@babel/core": "^7.0.0-beta.34",
+    "@babel/preset-env": "^7.0.0-beta.34",
     "@types/ajv": "^1.0.0",
     "@types/chai": "^4.0.5",
     "@types/debug": "^0.0.30",
     "@types/jest": "^21.1.6",
-    "@types/lodash": "^4.14.85",
+    "@types/lodash": "^4.14.87",
+    "@types/node": "^8.0.54",
     "@types/sizzle": "^2.3.1",
+    "awesome-typescript-loader": "^3.4.1",
+    "babel-core": "^6.26.0",
+    "babel-loader": "8.0.0-beta.0",
     "chai": "^4.1.2",
     "cross-env": "^5.1.1",
     "debug": "^3.1.0",
@@ -29,7 +36,9 @@
     "rollup": "^0.51.8",
     "ts-jest": "^21.2.3",
     "tslint": "^5.8.0",
-    "typescript": "^2.6.1"
+    "typescript": "^2.6.1",
+    "uglifyjs-webpack-plugin": "^1.1.2",
+    "webpack": "^3.9.1"
   },
   "dependencies": {
     "ajv": "^5.4.0",
@@ -40,6 +49,7 @@
     "collectCoverage": true,
     "collectCoverageFrom": [
       "**/*.{ts}",
+      "!**/*.{d.ts}",
       "!**/__tests__/**",
       "!**/node_modules/**"
     ],
@@ -55,6 +65,9 @@
       "ts",
       "js",
       "json"
-    ]
+    ],
+    "globals": {
+      "PRODUCTION": false
+    }
   }
 }
