@@ -4,6 +4,10 @@
       "noImplicitAny": true,
       "outDir": "./build",
       "rootDir": "./src",
+      "typeRoots": [
+          "node_modules/@types",
+          "src/@types"
+      ],
       "removeComments": true,
       "preserveConstEnums": true,
       "target": "es6",
