@@ -2,10 +2,10 @@
     <img width="100%" src="./assets/logo.png">
 </p>
 
-<div style="width: 100%; text-align: center;">
-    <h1>Resmoke</h1>
-    <div>A JavaScript front-end e2e test framework.</div>
-</div>
+<p align="center">
+    <b><h1 align="center">Resmoke</h1></b>
+    <div align="center">A test-case-based, action-based and in-browser front-end e2e test framework for single-page web applications.</div>
+</p>
 
 # Installation
 
