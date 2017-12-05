@@ -4,7 +4,7 @@
 
 <p align="center">
     <b><h1 align="center">Resmoke</h1></b>
-    <p align="center"><a href="https://www.npmjs.com/package/resmoke"><img src="https://img.shields.io/npm/v/resmoke.svg?style=flat-square"></a></p>
+    <!-- <p align="center"><a href="https://www.npmjs.com/package/resmoke"><img src="https://img.shields.io/npm/v/resmoke.svg?style=flat-square"></a></p> -->
     <div align="center">A test-case-based, action-based and in-browser front-end e2e test framework for single-page web applications.</div>
 </p>
 
