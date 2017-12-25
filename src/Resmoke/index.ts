@@ -23,7 +23,13 @@ export interface IResmokeProps {
 export type ActionDefinitionReturnType = Promise<any> | void;
 export type ActionDefinition<T> = (this: T, ...args: any[]) => ActionDefinitionReturnType;
 
+export interface IRunOptions {
+    withTestRunner?: boolean;
+}
+
 export default class Resmoke {
+    public static describe?: (description: string, callback: () => void) => any;
+    public static it?: (expectation: string, callback?: (done: any) => any) => any;
     public static addAction(name: string, def: ActionDefinition<Resmoke>): void {
         Resmoke.prototype.addActionInternal.call(null, name, def, Resmoke.prototype);
     }
@@ -78,7 +84,12 @@ export default class Resmoke {
         return this;
     }
 
-    public run(cases: ITestCaseDefinition[]): Promise<ITestCaseRunResult[]> {
+    public run(
+        cases: ITestCaseDefinition[],
+        options: IRunOptions = {
+            withTestRunner: false,
+        },
+    ): Promise<ITestCaseRunResult[]> {
         validateArg('cases', cases, 'array', 0);
 
         const testCaseResults: ITestCaseRunResult[] = [];
@@ -92,16 +103,43 @@ export default class Resmoke {
             }
         }
 
-        forEach(cases, c => {
-            runPromise = runPromise.then(() => {
-                return this.runSingle(c).then(result => {
-                    testCaseResults.push(result);
-                });
-            });
-        });
+        return new Promise(resolve => {
+            if (options.withTestRunner) {
+                if (!Resmoke.describe || !Resmoke.it) {
+                    throw new Error(
+                        `Must provide 'describe' and 'it' functions if options.withTestRunner is set to true`,
+                    );
+                }
 
-        return runPromise.then(() => {
-            return testCaseResults;
+                let doneCaseCnt = 0;
+                Resmoke.describe(`Run e2e tests with Resmoke`, () => {
+                    forEach(cases, c => {
+                        Resmoke.it(c.name, () => {
+                            return this.runSingle(c).then(() => {
+                                doneCaseCnt++;
+
+                                if (doneCaseCnt >= cases.length) {
+                                    resolve();
+                                }
+                            });
+                        });
+                    });
+                });
+            } else {
+                forEach(cases, c => {
+                    runPromise = runPromise.then(() => {
+                        return this.runSingle(c).then(result => {
+                            testCaseResults.push(result);
+                        });
+                    });
+                });
+
+                resolve(
+                    runPromise.then(() => {
+                        return testCaseResults;
+                    }),
+                );
+            }
         });
     }
 

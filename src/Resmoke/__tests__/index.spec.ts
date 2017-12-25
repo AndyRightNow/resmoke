@@ -98,48 +98,117 @@ describe('class Resmoke', () => {
 
         describe('run', () => {
             describe('Without errors', () => {
-                it('should run cases in order and collect results', () => {
+                describe('withTestRunner is false', () => {
+                    it('should run cases in order and collect results', () => {
+                        const arr: number[] = [];
+
+                        const cases: ITestCaseDefinition[] = [
+                            {
+                                name: 'case 1',
+                                pre() {
+                                    return Promise.resolve().then(() => {
+                                        arr.push(1);
+                                    });
+                                },
+                                test() {
+                                    arr.push(2);
+                                },
+                                post() {
+                                    arr.push(3);
+                                },
+                            },
+                            {
+                                name: 'case 2',
+                                test() {
+                                    arr.push(1);
+                                },
+                                post() {
+                                    return new Promise(resolve => {
+                                        setTimeout(() => {
+                                            arr.pop();
+                                            resolve();
+                                        }, 1000);
+                                    });
+                                },
+                            },
+                        ];
+
+                        return resmoke.run(cases).then(res => {
+                            expect(arr).to.deep.eq([1, 2, 3]);
+                            expect(res[0].name).to.eq('case 1');
+                            expect(res[0].errors).to.be.empty;
+                            expect(res[0].status).to.eq(TEST_CASE_RUN_RESULT_STATUS.SUCCESS);
+                            expect(res[1].name).to.eq('case 2');
+                            expect(res[1].errors).to.be.empty;
+                            expect(res[1].status).to.eq(TEST_CASE_RUN_RESULT_STATUS.SUCCESS);
+                        });
+                    });
+                });
+
+                describe('withTestRunner is true and no errors', () => {
+                    Resmoke.describe = describe;
+                    Resmoke.it = it;
                     const arr: number[] = [];
 
-                    const cases: ITestCaseDefinition[] = [
+                    new Resmoke({
+                        timeout: 3000,
+                    }).run(
+                        [
+                            {
+                                name: 'it should be ok',
+                                pre() {
+                                    return Promise.resolve().then(() => {
+                                        arr.push(1);
+                                    });
+                                },
+                                test() {
+                                    arr.push(2);
+                                },
+                                post() {
+                                    arr.push(3);
+                                },
+                            },
+                        ],
                         {
-                            name: 'case 1',
-                            pre() {
-                                return Promise.resolve().then(() => {
-                                    arr.push(1);
-                                });
-                            },
-                            test() {
-                                arr.push(2);
-                            },
-                            post() {
-                                arr.push(3);
-                            },
+                            withTestRunner: true,
                         },
-                        {
-                            name: 'case 2',
-                            test() {
-                                arr.push(1);
-                            },
-                            post() {
-                                return new Promise(resolve => {
-                                    setTimeout(() => {
-                                        arr.pop();
-                                        resolve();
-                                    }, 1000);
-                                });
-                            },
-                        },
-                    ];
+                    );
+                });
 
-                    return resmoke.run(cases).then(res => {
-                        expect(arr).to.deep.eq([1, 2, 3]);
-                        expect(res[0].name).to.eq('case 1');
-                        expect(res[0].errors).to.be.empty;
-                        expect(res[0].status).to.eq(TEST_CASE_RUN_RESULT_STATUS.SUCCESS);
-                        expect(res[1].name).to.eq('case 2');
-                        expect(res[1].errors).to.be.empty;
-                        expect(res[1].status).to.eq(TEST_CASE_RUN_RESULT_STATUS.SUCCESS);
+                describe('withTestRunner is true and with errors', () => {
+                    beforeAll(() => {
+                        Resmoke.describe = undefined;
+                        Resmoke.it = undefined;
+                    });
+
+                    it('should throw errors if describe and it are not provided', () => {
+                        const arr: number[] = [];
+
+                        try {
+                            resmoke.run(
+                                [
+                                    {
+                                        name: 'it should be ok',
+                                        pre() {
+                                            return Promise.resolve().then(() => {
+                                                arr.push(1);
+                                            });
+                                        },
+                                        test() {
+                                            arr.push(2);
+                                        },
+                                        post() {
+                                            arr.push(3);
+                                        },
+                                    },
+                                ],
+                                {
+                                    withTestRunner: true,
+                                },
+                            );
+                        } catch (error) {
+                            expect(error).to.not.be.undefined;
+                        }
                     });
                 });
             });
