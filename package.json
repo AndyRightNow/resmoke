@@ -13,8 +13,7 @@
         "test:browser": "karma start ./config/karma/karma.conf.js --singleRun --no-auto-watch --log-level error --browsers ChromeHeadless",
         "ts-check": "tsc --noEmit",
         "build": "webpack --config ./config/webpack/webpack.config.prod.js --verbose --display-modules --sort-assets-by size --sort-chunks-by size --sort-modules-by size",
-        "precommit": "npm run prettier && npm run lint && npm run ts-check && npm run build && git add .",
-        "prepush": "npm run precommit && npm run test:browser",
+        "precommit": "npm run prettier && npm run lint && npm run ts-check && npm run build && npm run test:browser && git add .",
         "bump": "node scripts/bump.js"
     },
     "private": false,

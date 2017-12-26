@@ -86,6 +86,9 @@ function setupValidation(): AjvType {
     const ajvInst = new Ajv({
         allErrors: true,
     });
+    const extraAjv = new Ajv({
+        allErrors: true,
+    });
 
     ajvInst.addKeyword('objectTypes', {
         validate: function objectTypesValidationFn(
@@ -122,7 +125,7 @@ function setupValidation(): AjvType {
                             const newParentSchema = cloneDeep(parentSchema);
                             delete newParentSchema.objectTypes;
                             newParentSchema.type = 'array';
-                            const arrayValidate = ajvInst.compile(newParentSchema);
+                            const arrayValidate = extraAjv.compile(newParentSchema);
 
                             if (arrayValidate(data)) {
                                 isSuccessful = true;
