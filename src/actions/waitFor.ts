@@ -62,9 +62,7 @@ export function waitFor(
                     } else if (cnt >= timeout) {
                         reject(
                             new Error(
-                                `Timeout ${
-                                    timeout
-                                } exceeded. No elements that match the selector '${selector}'`,
+                                `Timeout ${timeout} exceeded. No elements that match the selector '${selector}'`,
                             ),
                         );
                     } else {

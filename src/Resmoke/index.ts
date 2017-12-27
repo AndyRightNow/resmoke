@@ -1,5 +1,4 @@
 import { validateArg, ajv } from '../utils/validation';
-import { isPromise } from '../utils/types';
 import constants from '../constants';
 import {
     ITestCaseDefinition,
@@ -10,6 +9,10 @@ import {
 } from '../types/index';
 import extend = require('lodash/extend');
 import forEach = require('lodash/forEach');
+import forOwn = require('lodash/forOwn');
+import { isPromise } from '../utils/types';
+
+const DEFAULT_TIMEOUT = 3000;
 
 let runSingleDebug: any;
 if (!PRODUCTION) {
@@ -20,7 +23,7 @@ export interface IResmokeProps {
     timeout?: number;
 }
 
-export type ActionDefinitionReturnType = Promise<any> | void;
+export type ActionDefinitionReturnType = Promise<any> | void | Resmoke;
 export type ActionDefinition<T> = (this: T, ...args: any[]) => ActionDefinitionReturnType;
 
 export interface IRunOptions {
@@ -33,15 +36,24 @@ export default class Resmoke {
     public static addAction(name: string, def: ActionDefinition<Resmoke>): void {
         Resmoke.prototype.addActionInternal.call(null, name, def, Resmoke.prototype);
     }
+    public static removeAction(name: string): void {
+        if (Resmoke.prototype.hasOwnProperty(name)) {
+            delete (Resmoke.prototype as any)[name];
+        }
+    }
 
     public timeout: number;
-    private actionQueue: Array<ActionDefinition<this>>;
+    private internalPromise: Promise<void>;
+    private actionMap: {
+        [action: string]: ActionDefinition<Resmoke>;
+    };
 
     constructor(props?: IResmokeProps) {
         if (props) {
-            this.timeout = props.timeout || constants.DEFAULT_TIME_OUT;
+            this.timeout = props.timeout || DEFAULT_TIMEOUT;
         }
-        this.actionQueue = [];
+        this.internalPromise = new Promise(resolve => resolve());
+        this.actionMap = {};
     }
 
     public get and() {
@@ -49,7 +61,16 @@ export default class Resmoke {
     }
 
     public addAction(name: string, def: ActionDefinition<this>): this {
+        this.actionMap[name] = def;
         this.addActionInternal(name, def, this);
+
+        return this;
+    }
+
+    public removeAction(name: string): this {
+        if (this.hasOwnProperty(name)) {
+            delete (this as any)[name];
+        }
 
         return this;
     }
@@ -64,23 +85,14 @@ export default class Resmoke {
         }
     }
 
-    public exec(): Promise<any> {
-        return new Promise((resolve, reject) => {
-            function finalCb(err?: Error): void {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-
-                resolve();
-            }
-
-            this.next(finalCb);
+    public exec() {
+        return this.internalPromise.then(() => {
+            return;
         });
     }
 
-    public then(fn: () => ActionDefinitionReturnType): this {
-        this.enqueue(fn.bind(this));
+    public then(fn: ActionDefinition<this>) {
+        this.internalPromise = this.internalPromise.then(fn.bind(this.getClonedInstance()));
         return this;
     }
 
@@ -93,7 +105,6 @@ export default class Resmoke {
         validateArg('cases', cases, 'array', 0);
 
         const testCaseResults: ITestCaseRunResult[] = [];
-        let runPromise: Promise<any> = Promise.resolve();
 
         for (let i = 0, l = cases.length; i < l; i++) {
             if (!ajv.validate(constants.SCHEMA_ID.TEST_CASE_DEFINITION, cases[i])) {
@@ -127,7 +138,7 @@ export default class Resmoke {
                 });
             } else {
                 forEach(cases, c => {
-                    runPromise = runPromise.then(() => {
+                    this.then(() => {
                         return this.runSingle(c).then(result => {
                             testCaseResults.push(result);
                         });
@@ -135,7 +146,7 @@ export default class Resmoke {
                 });
 
                 resolve(
-                    runPromise.then(() => {
+                    this.exec().then(() => {
                         return testCaseResults;
                     }),
                 );
@@ -143,14 +154,29 @@ export default class Resmoke {
         });
     }
 
+    private getClonedInstance(): Resmoke {
+        const inst = new Resmoke({
+            timeout: this.timeout,
+        });
+
+        forOwn(this.actionMap, (fn, name) => {
+            inst.addAction(name, fn);
+        });
+
+        return inst;
+    }
+
     private addActionInternal<T>(name: string, def: ActionDefinition<T>, objToAdd: T): void {
         validateArg('name', name, 'string', 0);
         validateArg('actionDefinition', def, 'function', 1);
 
         Object.defineProperty(objToAdd, name, {
-            value(this: Resmoke, ...args: any[]) {
-                this.enqueue(def.bind(this, ...args));
-                return this;
+            value: (...args: any[]) => {
+                return this.then(() => {
+                    const localInstance = this.getClonedInstance();
+
+                    return localInstance.then(def.bind(localInstance, ...args)).exec();
+                });
             },
             enumerable: true,
             configurable: true,
@@ -168,35 +194,43 @@ export default class Resmoke {
             ...this.parseTestCaseAction(singleCase.post),
         ];
 
-        for (let i = 0, l = actionFnArr.length; i < l; i++) {
-            this.enqueue(actionFnArr[i]);
-        }
-        if (!PRODUCTION) {
-            runSingleDebug(`Queued ${actionFnArr.length} actions`);
-        }
-
         const result: ITestCaseRunResult = {
             name: singleCase.name,
             status: TEST_CASE_RUN_RESULT_STATUS.SUCCESS,
             errors: [],
         };
 
-        return this.exec()
-            .then<ITestCaseRunResult>(() => {
-                if (!PRODUCTION) {
-                    runSingleDebug(`Case ${singleCase.name} is successfully run.`);
-                }
-                return result;
-            })
-            .catch((error: Error) => {
-                if (!PRODUCTION) {
-                    runSingleDebug(`Case ${singleCase.name} finished with error ${error}.`);
-                }
-                return extend(result, {
-                    status: TEST_CASE_RUN_RESULT_STATUS.FAIL,
-                    errors: result.errors.concat(error),
+        let runPromise: Promise<any> = Promise.resolve();
+
+        forEach(actionFnArr, actionFn => {
+            runPromise = runPromise
+                .then(() => {
+                    const runResult = actionFn.call(this.getClonedInstance());
+
+                    if (isPromise(runResult)) {
+                        return runResult;
+                    } else if (runResult instanceof Resmoke) {
+                        return runResult.exec();
+                    }
+                })
+                .catch((error: Error) => {
+                    extend(result, {
+                        status: TEST_CASE_RUN_RESULT_STATUS.FAIL,
+                        errors: result.errors.concat(error),
+                    });
                 });
-            });
+        });
+
+        if (!PRODUCTION) {
+            runSingleDebug(`Queued ${actionFnArr.length} actions`);
+        }
+
+        return runPromise.then(() => {
+            if (!PRODUCTION) {
+                runSingleDebug(`Case ${singleCase.name} is successfully run.`);
+            }
+            return result;
+        });
     }
 
     private parseTestCaseAction(testCaseAction: TestCaseAction): TestCaseActionFn[] {
@@ -210,39 +244,11 @@ export default class Resmoke {
             for (const action of testCaseAction) {
                 const args = Array.isArray(action) ? action : [action];
 
-                ret.push(this.callAction.bind(this, ...args));
+                const localInstance = this.getClonedInstance();
+                ret.push(localInstance.callAction.bind(localInstance, ...args));
             }
         }
 
         return ret;
-    }
-
-    private next(finalCb: (err?: Error) => void): void {
-        if (this.actionQueue.length) {
-            const actionDef = this.actionQueue.shift();
-
-            let result;
-
-            try {
-                result = actionDef.call(this);
-            } catch (error) {
-                finalCb(error);
-                return;
-            }
-
-            if (isPromise(result)) {
-                result.then(() => {
-                    this.next(finalCb);
-                });
-            } else {
-                this.next(finalCb);
-            }
-        } else {
-            finalCb();
-        }
-    }
-
-    private enqueue(a: ActionDefinition<this>): void {
-        this.actionQueue.push(a);
     }
 }

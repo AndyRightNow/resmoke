@@ -111,9 +111,7 @@ function setupValidation(): AjvType {
 
             if (!PRODUCTION) {
                 validationDebug(
-                    `Validating ${dataPath} ${
-                        data
-                    } with the keyword objectTypes using the schemas ${schema}`,
+                    `Validating ${dataPath} ${data} with the keyword objectTypes using the schemas ${schema}`,
                 );
             }
             if (Array.isArray(data) || isObjectLike(data) || typeof data === 'function') {

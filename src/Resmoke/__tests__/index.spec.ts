@@ -54,7 +54,7 @@ describe('class Resmoke', () => {
 
     describe('Own Methods', () => {
         describe('addAction', () => {
-            it('should add the action to the class prototype', () => {
+            it('should add the action to the instance itself', () => {
                 const arr: number[] = [];
 
                 resmoke
@@ -143,6 +143,74 @@ describe('class Resmoke', () => {
                             expect(res[1].status).to.eq(TEST_CASE_RUN_RESULT_STATUS.SUCCESS);
                         });
                     });
+
+                    it('should run cases in order and collect results with pre-defined actions', () => {
+                        const arr: number[] = [];
+
+                        resmoke.addAction('test-action1', function() {
+                            return Promise.resolve().then(() => {
+                                arr.push(1);
+                            });
+                        });
+                        resmoke.addAction('test-action2', function() {
+                            arr.push(2);
+                        });
+                        resmoke.addAction('test-action3', function() {
+                            arr.push(3);
+                        });
+                        resmoke.addAction('test-action4', function() {
+                            arr.push(1);
+                        });
+                        resmoke.addAction('test-action5', function() {
+                            return new Promise(resolve => {
+                                setTimeout(() => {
+                                    arr.pop();
+                                    resolve();
+                                }, 1000);
+                            });
+                        });
+
+                        const cases: ITestCaseDefinition[] = [
+                            {
+                                name: 'case 1',
+                                pre: ['test-action1'],
+                                test: ['test-action2'],
+                                post: ['test-action3'],
+                            },
+                            {
+                                name: 'case 2 with nested actions',
+                                pre() {
+                                    return this.then(function() {
+                                        return this.callAction('test-action2').then(function() {
+                                            return this.callAction('test-action2').then(function() {
+                                                return this.callAction('test-action2');
+                                            });
+                                        });
+                                    });
+                                },
+                                test: ['test-action4'],
+                                post: ['test-action5'],
+                            },
+                        ];
+
+                        return resmoke.run(cases).then(res => {
+                            expect(arr).to.deep.eq([1, 2, 3, 2, 2, 2]);
+                            expect(res[0].name).to.eq('case 1');
+                            expect(res[0].errors).to.be.empty;
+                            expect(res[0].status).to.eq(TEST_CASE_RUN_RESULT_STATUS.SUCCESS);
+                            expect(res[1].name).to.contain('case 2');
+                            expect(res[1].errors).to.be.empty;
+                            expect(res[1].status).to.eq(TEST_CASE_RUN_RESULT_STATUS.SUCCESS);
+                        });
+                    });
+
+                    afterAll(() => {
+                        resmoke.removeAction('test-action1');
+                        resmoke.removeAction('test-action2');
+                        resmoke.removeAction('test-action3');
+                        resmoke.removeAction('test-action4');
+                        resmoke.removeAction('test-action5');
+                    });
                 });
 
                 describe('withTestRunner is true and no errors', () => {
@@ -181,11 +249,11 @@ describe('class Resmoke', () => {
                         Resmoke.it = undefined;
                     });
 
-                    it('should throw errors if describe and it are not provided', () => {
+                    it('should throw errors if describe and it are not provided', async () => {
                         const arr: number[] = [];
 
                         try {
-                            resmoke.run(
+                            await resmoke.run(
                                 [
                                     {
                                         name: 'it should be ok',
@@ -249,7 +317,7 @@ describe('class Resmoke', () => {
                     ];
 
                     return resmoke.run(cases).then(res => {
-                        expect(arr).to.deep.eq([1, 3]);
+                        expect(arr).to.deep.eq([1]);
                         expect(res[0].name).to.eq('case 1');
                         expect(res[0].errors).to.have.length(1);
                         expect(res[0].status).to.eq(TEST_CASE_RUN_RESULT_STATUS.FAIL);

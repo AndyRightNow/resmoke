@@ -10,7 +10,7 @@
       ],
       "removeComments": true,
       "preserveConstEnums": true,
-      "target": "es6",
+      "target": "es2015",
       "sourceMap": true,
       "noUnusedLocals": true,
       "noImplicitThis": true,
