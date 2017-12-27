@@ -126,7 +126,13 @@ export default class Resmoke {
                 Resmoke.describe(`Run e2e tests with Resmoke`, () => {
                     forEach(cases, c => {
                         Resmoke.it(c.name, () => {
-                            return this.runSingle(c).then(() => {
+                            return this.runSingle(c).then(result => {
+                                if (result.errors && result.errors.length) {
+                                    for (const err of result.errors) {
+                                        throw err;
+                                    }
+                                }
+
                                 doneCaseCnt++;
 
                                 if (doneCaseCnt >= cases.length) {

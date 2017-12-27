@@ -14,7 +14,8 @@
         "build": "webpack --config ./config/webpack/webpack.config.prod.js --verbose --display-modules --sort-assets-by size --sort-chunks-by size --sort-modules-by size",
         "build-ts": "tsc",
         "precommit": "npm run prettier && npm run lint && npm run build-ts && npm run build && npm run test:browser && git add .",
-        "bump": "node scripts/bump.js"
+        "bump": "node scripts/bump.js",
+        "publish-alpha": "npm run bump prerelease alpha && git push --follow-tags origin-https master && npm publish --tag alpha"
     },
     "private": false,
     "devDependencies": {
