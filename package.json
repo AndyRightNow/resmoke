@@ -1,6 +1,6 @@
 {
     "name": "resmoke",
-    "version": "0.0.1-alpha.3",
+    "version": "0.0.1-alpha.4",
     "description": "A test-case-based, action-based and in-browser front-end e2e test framework for single-page web applications",
     "main": "./dist/bundle.js",
     "author": "AndyRightNow",
