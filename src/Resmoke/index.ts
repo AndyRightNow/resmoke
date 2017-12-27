@@ -177,7 +177,7 @@ export default class Resmoke {
         validateArg('actionDefinition', def, 'function', 1);
 
         Object.defineProperty(objToAdd, name, {
-            value: (...args: any[]) => {
+            value(this: Resmoke, ...args: any[]) {
                 return this.then(() => {
                     const localInstance = this.getClonedInstance();
 
